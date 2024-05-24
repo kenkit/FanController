@@ -11,11 +11,15 @@
 class FanController
 {
 public:
-	FanController(byte sensorPin, byte mofsetPin, unsigned int sensorThreshold, byte pwmPin = 0);
+	FanController(byte sensorPin, byte mofsetPin, unsigned int sensorThreshold, unsigned int switch_off_temperature = 30, byte pwmPin = 0);
 	void begin();
 	unsigned int getSpeed();
 	void setDutyCycle(byte dutyCycle);
 	byte getDutyCycle();
+	void update_switch_off_temp(unsigned int switchoftemp)
+	{
+		_switch_off_temperature = switchoftemp;
+	}
 
 private:
 	static FanController *_instances[6];
@@ -25,7 +29,7 @@ private:
 	byte _pwmPin;
 	byte _pwmDutyCycle, lastpwmDutyCycle;
 	byte _instance;
-	unsigned int _lastReading;
+	unsigned int _lastReading, _switch_off_temperature;
 	volatile unsigned int _halfRevs;
 	unsigned long _lastMillis;
 	void _trigger();

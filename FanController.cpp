@@ -11,7 +11,7 @@
 #define ISR_PREFIX
 #endif
 
-FanController::FanController(byte sensorPin, byte mofsetPin, unsigned int sensorThreshold, byte pwmPin)
+FanController::FanController(byte sensorPin, byte mofsetPin, unsigned int sensorThreshold, unsigned int switch_off_temperature, byte pwmPin) : _switch_off_temperature(switch_off_temperature)
 {
 	_sensorPin = sensorPin;
 	_sensorInterruptPin = digitalPinToInterrupt(sensorPin);
@@ -60,7 +60,7 @@ void FanController::setDutyCycle(byte dutyCycle)
 	analogWrite(_pwmPin, 2.55 * _pwmDutyCycle);
 	if (lastpwmDutyCycle != _pwmDutyCycle)
 	{
-		if (_pwmDutyCycle < 3)
+		if (_pwmDutyCycle < _switch_off_temperature)
 		{
 			digitalWrite(_mofsetpin, HIGH); // turn the mofset off.
 		}
