@@ -2,22 +2,24 @@
 #include "FanController.h"
 
 #if defined(ARDUINO_ARCH_ESP32)
-	#include <analogWrite.h>
+#include <analogWrite.h>
 #endif
 
 #if defined(ESP8266)
-	#define ISR_PREFIX ICACHE_RAM_ATTR
+#define ISR_PREFIX ICACHE_RAM_ATTR
 #else
-	#define ISR_PREFIX
+#define ISR_PREFIX
 #endif
 
-FanController::FanController(byte sensorPin, unsigned int sensorThreshold, byte pwmPin)
+FanController::FanController(byte sensorPin, byte mofsetPin, unsigned int sensorThreshold, byte pwmPin)
 {
 	_sensorPin = sensorPin;
 	_sensorInterruptPin = digitalPinToInterrupt(sensorPin);
 	_sensorThreshold = sensorThreshold;
 	_pwmPin = pwmPin;
+	_mofsetpin = mofsetPin;
 	pinMode(pwmPin, OUTPUT);
+	pinMode(_mofsetpin, OUTPUT);
 	_pwmDutyCycle = 100;
 }
 
@@ -32,11 +34,13 @@ void FanController::begin()
 #endif
 	digitalWrite(_sensorPin, HIGH);
 	setDutyCycle(_pwmDutyCycle);
+	digitalWrite(_mofsetpin, HIGH); // turn the mofset off.
 	_attachInterrupt();
 	instance++;
 }
 
-unsigned int FanController::getSpeed() {
+unsigned int FanController::getSpeed()
+{
 	unsigned int elapsed = millis() - _lastMillis;
 	if (elapsed > _sensorThreshold)
 	{
@@ -50,12 +54,26 @@ unsigned int FanController::getSpeed() {
 	return _lastReading;
 }
 
-void FanController::setDutyCycle(byte dutyCycle) {
+void FanController::setDutyCycle(byte dutyCycle)
+{
 	_pwmDutyCycle = min((int)dutyCycle, 100);
 	analogWrite(_pwmPin, 2.55 * _pwmDutyCycle);
+	if (lastpwmDutyCycle != _pwmDutyCycle)
+	{
+		if (_pwmDutyCycle < 3)
+		{
+			digitalWrite(_mofsetpin, HIGH); // turn the mofset off.
+		}
+		else
+		{
+			digitalWrite(_mofsetpin, LOW); // turn the mofset on.
+		}
+		lastpwmDutyCycle = _pwmDutyCycle;
+	}
 }
 
-byte FanController::getDutyCycle() {
+byte FanController::getDutyCycle()
+{
 	return _pwmDutyCycle;
 }
 
@@ -84,7 +102,7 @@ void FanController::_attachInterrupt()
 	}
 }
 
-FanController * FanController::_instances[6];
+FanController *FanController::_instances[6];
 
 void FanController::_trigger()
 {
