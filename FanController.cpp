@@ -2,7 +2,7 @@
 #include "FanController.h"
 
 #if defined(ARDUINO_ARCH_ESP32)
-#include <analogWrite.h>
+// #include <analogWrite.h>
 #endif
 
 #if defined(ESP8266)
@@ -11,7 +11,7 @@
 #define ISR_PREFIX
 #endif
 
-FanController::FanController(byte sensorPin, byte mofsetPin, unsigned int sensorThreshold, unsigned int switch_off_temperature, byte pwmPin) : _switch_off_temperature(switch_off_temperature)
+FanController::FanController(byte sensorPin, byte mofsetPin, unsigned int sensorThreshold, unsigned int minimum_pwm_to_off, byte pwmPin) : _minimum_pwm_to_shutdown(minimum_pwm_to_off), lastpwmDutyCycle(0)
 {
 	_sensorPin = sensorPin;
 	_sensorInterruptPin = digitalPinToInterrupt(sensorPin);
@@ -60,7 +60,7 @@ void FanController::setDutyCycle(byte dutyCycle)
 	analogWrite(_pwmPin, 2.55 * _pwmDutyCycle);
 	if (lastpwmDutyCycle != _pwmDutyCycle)
 	{
-		if (_pwmDutyCycle < _switch_off_temperature)
+		if (_pwmDutyCycle <= _minimum_pwm_to_shutdown)
 		{
 			digitalWrite(_mofsetpin, HIGH); // turn the mofset off.
 		}
